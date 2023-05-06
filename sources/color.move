@@ -52,6 +52,9 @@ module examples::color {
   /// ability, the Sui object struct type cannot have the drop ability either. Hence, any Sui object cannot be arbitrarily
   /// dropped and must be either consumed (for example, transferred to another owner) or deleted by unpacking.
   public entry fun delete(object: ColorObject) {
+    // The object unpacks and generates individual fields. You can drop all of the u8 values, which are primitive types.
+    // However, you can't drop the id, which has type UID, and must explicitly delete it using the object::delete API.
+    // At the end of this call, the object is no longer stored on-chain.
     let ColorObject { id, red: _, green: _, blue: _ } = object;
     object::delete(id);
   }
@@ -98,6 +101,30 @@ module examples::color {
       
       test_scenario::return_to_sender(&mut scenario_val, obj1);
     };
+
+    test_scenario::end(scenario_val);
+  }
+
+    #[test(owner=@0x1)]
+  fun test_delete_color(owner: address) {
+    use sui::test_scenario;
+
+    // Create a ColorObject and transfer it to @owner.
+    let scenario_val = test_scenario::begin(owner);
+
+    let ctx = test_scenario::ctx(&mut scenario_val);
+    create(255, 0, 255, ctx);
+
+    // Delete the ColorObject just created.
+    test_scenario::next_tx(&mut scenario_val, owner);
+    let object = test_scenario::take_from_sender<ColorObject>(&mut scenario_val);
+    delete(object);
+
+    // Verify that the object was indeed deleted.
+    test_scenario::next_tx(&mut scenario_val, owner);
+    // helper that returns true if `most_recent_id_for_sender` returns some.
+    // The latter returns the most recent object of type `T` transferred to address `account` that has not been taken
+    assert!(!test_scenario::has_most_recent_for_sender<ColorObject>(&mut scenario_val), 0);
 
     test_scenario::end(scenario_val);
   }
