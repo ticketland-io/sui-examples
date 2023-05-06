@@ -45,4 +45,50 @@ module examples::color {
     into_object.green = from_object.green;
     into_object.blue = from_object.blue;
   }
+
+  #[test(owner=@0x1)]
+  fun test_copy_into(owner: address) {
+    use sui::test_scenario;
+
+    let scenario_val = test_scenario::begin(owner);
+
+    // Create two ColorObjects owned by `owner`, and obtain their IDs
+    let (id1, id2) = {
+      let ctx = test_scenario::ctx(&mut scenario_val);
+      create(255, 255, 255, ctx);
+      
+      // get the ID of the object the call created using `last_created_object_id`
+      let id1 = object::id_from_address(tx_context::last_created_object_id(ctx));
+      create(0, 0, 0, ctx);
+      let id2 = object::id_from_address(tx_context::last_created_object_id(ctx));
+      
+      (id1, id2)
+    };
+
+    test_scenario::next_tx(&mut scenario_val, owner);
+    {
+      let obj1 = test_scenario::take_from_sender_by_id<ColorObject>(&mut scenario_val, id1);
+      let obj2 = test_scenario::take_from_sender_by_id<ColorObject>(&mut scenario_val, id2);
+      let (red, green, blue) = get_color(&obj1);
+      
+      assert!(red == 255 && green == 255 && blue == 255, 0);
+
+      let _ = test_scenario::ctx(&mut scenario_val);
+      copy_into(&obj2, &mut obj1);
+      test_scenario::return_to_sender(&mut scenario_val, obj1);
+      test_scenario::return_to_sender(&mut scenario_val, obj2);
+    };
+
+    test_scenario::next_tx(&mut scenario_val, owner);
+    {
+      let obj1 = test_scenario::take_from_sender_by_id<ColorObject>(&mut scenario_val, id1);
+      let (red, green, blue) = get_color(&obj1);
+
+      assert!(red == 0 && green == 0 && blue == 0, 0);
+      
+      test_scenario::return_to_sender(&mut scenario_val, obj1);
+    };
+
+    test_scenario::end(scenario_val);
+  }
 }
