@@ -35,6 +35,46 @@ module examples::sword {
     // This function has custom rules performed by the Sui Move bytecode verifier that ensures
     // that `T` is an object defined in the module where `transfer` is invoked. Use
     // `public_transfer` to transfer an object with `store` outside of its module.
+    //
+    // Objects in Sui can have different ownership types:
+    // 1. Exclusively owned by an address.
+    // 2. Exclusively owned by another object.
+    // 3. Immutable (`transfer::freeze_object(obj)`)
+    // 4. Shared (`transfer::share_object(obj)`)
+    //
+    // An object can be owned by another object when you add the former as a dynamic object field of the latter.
+    // While external tools can read the dynamic object field value at its original ID, from Move's perspective,
+    // you can only access it through the field on its owner using the dynamic_object_field APIs:
+    //
+    // 
+    // ```move
+    // use sui::dynamic_object_field as ofield;
+    // 
+    // let a: &mut A = /* ... */;
+    // let b: B = /* ... */;
+    // 
+    // // Adds `b` as a dynamic object field to `a` with "name" `0: u8`.
+    // ofield::add<u8, B>(&mut a.id, 0, b);
+    // 
+    // // Get access to `b` at its new position
+    // let b: &B = ofield::borrow<u8, B>(&a.id, 0);
+    // ```
+    // 
+    // If you pass the value of a dynamic object field as an input to an entry function in a transaction,
+    // that transaction fails. For instance, if you have a chain of ownership: address Addr1 owns object a,
+    // object a has a dynamic object field containing object b, and b has a dynamic object field containing 
+    // object c, then in order to use object c in a Move call, Addr1 must sign the transaction and accept a 
+    // as an input, and you must access b and c dynamically during transaction execution:
+    //
+    // ```move
+    //   use sui::dynamic_object_field as ofield;
+    //
+    //   // Signer of ctx is Addr1
+    //   public entry fun entry_function(a: &A, ctx: &mut TxContext) {
+    //     let b: &B = ofield::borrow<u8, B>(&a.id, 0);
+    //     let c: &C = ofield::borrow<u8, C>(&b.id, 0);
+    //   }
+    // ```
     transfer::transfer(admin, tx_context::sender(ctx));
   }
 
