@@ -46,6 +46,16 @@ module examples::color {
     into_object.blue = from_object.blue;
   }
 
+  /// You can also pass objects by value into an entry function. By doing so, the object is moved out of Sui storage. 
+  /// It is then up to the Sui Move code to decide where this object should go.
+  /// Since every Sui object struct type must include UID as its first field, and the UID struct does not have the drop
+  /// ability, the Sui object struct type cannot have the drop ability either. Hence, any Sui object cannot be arbitrarily
+  /// dropped and must be either consumed (for example, transferred to another owner) or deleted by unpacking.
+  public entry fun delete(object: ColorObject) {
+    let ColorObject { id, red: _, green: _, blue: _ } = object;
+    object::delete(id);
+  }
+
   #[test(owner=@0x1)]
   fun test_copy_into(owner: address) {
     use sui::test_scenario;
