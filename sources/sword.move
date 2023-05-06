@@ -3,6 +3,12 @@ module examples::sword {
   use sui::transfer;
   use sui::tx_context::{Self, TxContext};
 
+  // To define a struct that represents a Sui object type, you must add a key capability to the definition.
+  // The first field of the struct must be the id of the object with type UID from the object module
+  //
+  // Important: In both core Move and Sui Move, the key ability denotes a type that can appear as a key in global storage.
+  // However, the structure of global storage is a bit different: core Move uses a (type, address)-indexed map,
+  // whereas Sui Move uses a map keyed by object IDs.
   struct Sword has key, store {
     id: UID,
     magic: u64,
@@ -78,6 +84,8 @@ module examples::sword {
     transfer::transfer(admin, tx_context::sender(ctx));
   }
 
+  // For a transaction to make a call to the create_sword function, the sender of the
+  // transaction must be the owner of  the forge  object
   public fun create_sword(forge: &mut Forge, magic: u64, strength: u64, recipient: address, ctx: &mut TxContext) {
     let sword = Sword {
       id: object::new(ctx),
