@@ -84,6 +84,15 @@ module examples::color {
     transfer::transfer(object, recipient)
   }
 
+  public entry fun update(
+    object: &mut ColorObject,
+    red: u8, green: u8, blue: u8,
+  ) {
+      object.red = red;
+      object.green = green;
+      object.blue = blue;
+  }
+
   #[test(owner=@0x1)]
   fun test_copy_into(owner: address) {
     use sui::test_scenario;
@@ -194,11 +203,13 @@ module examples::color {
     assert!(!test_scenario::has_most_recent_for_sender<ColorObject>(&mut scenario_val), 0);
 
     test_scenario::next_tx(&mut scenario_val, sender2);
+    // test_scenario::take_immutable<T> to take an immutable object wrapper from global storage.
     let object = test_scenario::take_immutable<ColorObject>(&mut scenario_val);
     let (red, green, blue) = get_color(&object);
     
     assert!(red == 255 && green == 0 && blue == 255, 0);
     
+    // test_scenario::return_immutable to return the wrapper back to the global storage.
     test_scenario::return_immutable(object);
     test_scenario::end(scenario_val);
   }
