@@ -38,6 +38,20 @@ module examples::sword {
     transfer::transfer(admin, tx_context::sender(ctx));
   }
 
+  public fun create_sword(magic: u64, strength: u64, recipient: address, ctx: &mut TxContext) {
+    let sword = Sword {
+      id: object::new(ctx),
+      magic,
+      strength,
+    };
+
+    transfer::transfer(sword, recipient);
+  }
+
+  public entry fun sword_transfer(sword: Sword, recipient: address, _ctx: &mut TxContext) {
+    transfer::transfer(sword, recipient);
+  }
+
   public fun magic(self: &Sword): u64 {
     self.magic
   }
