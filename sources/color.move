@@ -59,6 +59,11 @@ module examples::color {
     object::delete(id);
   }
 
+  /// Transfer object to recipient. Option 2 of what we can do when object is paased by value.
+  public entry fun transfer(object: ColorObject, recipient: address) {
+    transfer::transfer(object, recipient)
+  }
+
   #[test(owner=@0x1)]
   fun test_copy_into(owner: address) {
     use sui::test_scenario;
@@ -105,7 +110,7 @@ module examples::color {
     test_scenario::end(scenario_val);
   }
 
-    #[test(owner=@0x1)]
+  #[test(owner=@0x1)]
   fun test_delete_color(owner: address) {
     use sui::test_scenario;
 
@@ -125,6 +130,33 @@ module examples::color {
     // helper that returns true if `most_recent_id_for_sender` returns some.
     // The latter returns the most recent object of type `T` transferred to address `account` that has not been taken
     assert!(!test_scenario::has_most_recent_for_sender<ColorObject>(&mut scenario_val), 0);
+
+    test_scenario::end(scenario_val);
+  }
+
+  #[test(owner=@0x1)]
+  fun test_transfer_color(owner: address) {
+    use sui::test_scenario;
+
+    // Create a ColorObject and transfer it to @owner.
+    let scenario_val = test_scenario::begin(owner);
+    let ctx = test_scenario::ctx(&mut scenario_val);
+    create(255, 0, 255, ctx);
+
+    // Transfer the object to recipient.
+    let recipient = @0x2;
+    test_scenario::next_tx(&mut scenario_val, owner);
+    let object = test_scenario::take_from_sender<ColorObject>(&mut scenario_val);
+    let _ = test_scenario::ctx(&mut scenario_val);
+    transfer(object, recipient);
+
+    // Check that owner no longer owns the object.
+    test_scenario::next_tx(&mut scenario_val, owner);
+    assert!(!test_scenario::has_most_recent_for_sender<ColorObject>(&mut scenario_val), 0);
+
+    // Check that recipient now owns the object.
+    test_scenario::next_tx(&mut scenario_val, recipient);
+    assert!(test_scenario::has_most_recent_for_sender<ColorObject>(&mut scenario_val), 0);
 
     test_scenario::end(scenario_val);
   }
