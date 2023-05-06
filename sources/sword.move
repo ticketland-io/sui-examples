@@ -49,4 +49,23 @@ module examples::sword {
   public fun swords_created(self: &Forge): u64 {
     self.swords_created
   }
+
+  #[test(recipient = @0xCAFE)]
+  fun test_sword_create(recipient: address) {
+    use sui::tx_context;
+    use sui::transfer::transfer;
+
+    // create a test context
+    let ctx = tx_context::dummy();
+
+    let sword = Sword {
+      id: object::new(&mut ctx),
+      magic: 20,
+      strength: 100,
+    };
+
+    assert!(magic(&sword) == 20 && strength(&sword) == 100, 1);
+    
+    transfer(sword, recipient);
+  }
 }
