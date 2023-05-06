@@ -38,7 +38,7 @@ module examples::sword {
     transfer::transfer(admin, tx_context::sender(ctx));
   }
 
-  public fun create_sword(magic: u64, strength: u64, recipient: address, ctx: &mut TxContext) {
+  public fun create_sword(forge: &mut Forge, magic: u64, strength: u64, recipient: address, ctx: &mut TxContext) {
     let sword = Sword {
       id: object::new(ctx),
       magic,
@@ -46,6 +46,8 @@ module examples::sword {
     };
 
     transfer::transfer(sword, recipient);
+
+    forge.swords_created = forge.swords_created + 1;
   }
 
   public entry fun sword_transfer(sword: Sword, recipient: address, _ctx: &mut TxContext) {
@@ -103,11 +105,28 @@ module examples::sword {
 
     // second transaction executed by admin to create the sword
     test_scenario::next_tx(&mut scenario_val, admin);
-    create_sword(20, 100, initial_owner, test_scenario::ctx(&mut scenario_val));
+    let forge = test_scenario::take_from_sender<Forge>(&mut scenario_val);
+    create_sword(&mut forge, 20, 100, initial_owner, test_scenario::ctx(&mut scenario_val));
+    test_scenario::return_to_sender(&mut scenario_val, forge);
+
+    // Asser that swords_created is updated
+    // Important: Transaction effects, such as object creation and transfer become visible only after a given
+    // transaction completes. For example, if the second transaction in the running example created a sword and
+    // transferred it to the administrator's address, it would only become available for retrieval from the administrator's
+    // address (via test_scenario, take_from_sender, or take_from_address functions) in the third transaction.
+    // This is why we need to init the next transaction to get the updated value of the forge object.
+    test_scenario::next_tx(&mut scenario_val, admin);
+    let forge = test_scenario::take_from_sender<Forge>(&mut scenario_val);
+    assert!(swords_created(&forge) == 1, 1);
+    test_scenario::return_to_sender(&mut scenario_val, forge);
 
     // third transaction executed by the initial sword owner
     test_scenario::next_tx(&mut scenario_val, initial_owner);
     // extract the sword owned by the initial owner
+    // In pure Move there is no notion of Sui storage; consequently, there is no easy way for the emulated Sui transaction
+    // to retrieve it from storage. This is where the test_scenario module helps - its take_from_sender function allows an
+    // object of a given type (Sword) that is owned by an address executing the current transaction to be available for Move
+    // code manipulation.
     let sword = test_scenario::take_from_sender<Sword>(&mut scenario_val);
     // transfer the sword to the final owner
     sword_transfer(sword, final_owner, test_scenario::ctx(&mut scenario_val));
@@ -122,4 +141,24 @@ module examples::sword {
 
     test_scenario::end(scenario_val);
   }
+
+  #[test(admin = @0xBABE)]
+  public fun test_module_init(admin: address) {
+    use sui::test_scenario;
+
+    // First transaction to emulate module initialization
+    let scenario_val = test_scenario::begin(admin);
+    init(test_scenario::ctx(&mut scenario_val));
+
+    // Second transaction to check if the forge has been created
+    // and has initial value of zero swords created
+    test_scenario::next_tx(&mut scenario_val, admin);
+    let forge = test_scenario::take_from_sender<Forge>(&mut scenario_val);
+    assert!(swords_created(&forge) == 0, 1);
+    
+    // Return the Forge object to the object pool
+    test_scenario::return_to_sender(&mut scenario_val, forge);
+
+    test_scenario::end(scenario_val);
+}
 }
