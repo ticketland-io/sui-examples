@@ -6,7 +6,7 @@ module examples::clock {
     ts_ms: u64,
   }
 
-  entry fun access(clock: Clock) {
+  entry fun access(clock: &Clock) {
     event::emit(TimeEvent {
       ts_ms: clock::timestamp_ms(clock),
     });
