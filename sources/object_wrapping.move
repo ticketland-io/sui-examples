@@ -15,9 +15,15 @@
 /// through specific contract calls.
 module examples::object_wrapping {
   use sui::object::UID;
+  use std::option::{Self, Option};
   use sui::object;
   use sui::transfer;
+  use sui::coin::{Self, Coin};
+  use sui::balance::{Self, Balance};
+  use sui::sui::SUI;
   use sui::tx_context::{Self, TxContext};
+
+  const MIN_FEE: u64 = 1000;
 
   struct Foo has key {
     id: UID,
@@ -135,7 +141,7 @@ module examples::object_wrapping {
     // take the fee
     let service_address = tx_context::sender(ctx);
     balance::join(&mut fee1, fee2);
-    transfer::transfer(coin::from_balance(fee1, ctx), service_address);
+    transfer::public_transfer(coin::from_balance(fee1, ctx), service_address);
 
     // Finally, delete both wrapped objects. Remember, UID is not drop so we need to use the following API to drop it
     object::delete(id1);
