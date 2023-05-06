@@ -59,6 +59,26 @@ module examples::color {
     object::delete(id);
   }
 
+  /// This call makes the specified object immutable. This is a non-reversible operation. You should freeze an object
+  /// only when you are certain that you don't need to mutate it. You  must already own a ColorObject to pass it in.
+  /// At the end of this call, this object is frozen and can never be mutated
+  /// 
+  /// Once an object becomes immutable, the rules of who can use this object in Sui Move calls change:
+  /// 1. An immutable object can be passed only as a read-only, immutable reference to Sui Move entry functions as &T.
+  /// 2. Anyone can use immutable objects.
+  /// 
+  /// Since immutable objects can never be mutated, there's no data race, even when multiple transactions are using the same
+  /// immutable object at the same time. Hence, the existence of immutable objects does not pose any requirement on consensus.
+  public entry fun freeze_object(object: ColorObject) {
+    transfer::freeze_object(object)
+  }
+
+  /// API that creates an immutable object at creation
+  public entry fun create_immutable(red: u8, green: u8, blue: u8, ctx: &mut TxContext) {
+    let color_object = new(red, green, blue, ctx);
+    transfer::freeze_object(color_object)
+  }
+
   /// Transfer object to recipient. Option 2 of what we can do when object is paased by value.
   public entry fun transfer(object: ColorObject, recipient: address) {
     transfer::transfer(object, recipient)
@@ -158,6 +178,28 @@ module examples::color {
     test_scenario::next_tx(&mut scenario_val, recipient);
     assert!(test_scenario::has_most_recent_for_sender<ColorObject>(&mut scenario_val), 0);
 
+    test_scenario::end(scenario_val);
+  }
+
+  #[test(sender1=@0x1, sender2=@0x2)]
+  fun test_create_immutable(sender1: address, sender2: address) {
+    use sui::test_scenario;
+
+    let scenario_val = test_scenario::begin(sender1);
+    let ctx = test_scenario::ctx(&mut scenario_val);
+    create_immutable(255, 0, 255, ctx);
+
+    test_scenario::next_tx(&mut scenario_val, sender1);
+    // take_owned does not work for immutable objects.
+    assert!(!test_scenario::has_most_recent_for_sender<ColorObject>(&mut scenario_val), 0);
+
+    test_scenario::next_tx(&mut scenario_val, sender2);
+    let object = test_scenario::take_immutable<ColorObject>(&mut scenario_val);
+    let (red, green, blue) = get_color(&object);
+    
+    assert!(red == 255 && green == 0 && blue == 255, 0);
+    
+    test_scenario::return_immutable(object);
     test_scenario::end(scenario_val);
   }
 }
