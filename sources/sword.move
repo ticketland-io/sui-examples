@@ -64,6 +64,7 @@ module examples::sword {
     self.swords_created
   }
 
+  // This is a unit test
   #[test(recipient = @0xCAFE)]
   fun test_sword_create(recipient: address) {
     use sui::tx_context;
@@ -81,5 +82,44 @@ module examples::sword {
     assert!(magic(&sword) == 20 && strength(&sword) == 100, 1);
     
     transfer(sword, recipient);
+  }
+
+  // This test is more of an integration test emulating real transactions
+  #[test(admin = @0xBABE, initial_owner=@0xCAFE, final_owner=@0xFACE)]
+  fun test_sword_transactions(admin: address, initial_owner: address, final_owner: address) {
+    use sui::test_scenario;
+
+    // first transaction to emulate module initialization
+    // The test_scenario module provides a scenario that emulates a series of Sui transactions,
+    // each with a potentially different user executing them. A test using this module typically starts
+    // the first transaction using the test_scenario::begin function. This function takes an address of
+    // the user executing the transaction as its argument and returns an instance of the Scenario struct
+    // representing a scenario. An instance of the Scenario struct contains a per-address object pool emulating
+    // Sui object storage, with helper functions provided to manipulate objects in the pool. After the first  
+    // transaction finishes, subsequent test transactions start with the test_scenario::next_tx function. This function
+    // takes an instance of the Scenario struct representing the current scenario and an address of a user as arguments.
+    let scenario_val = test_scenario::begin(admin);
+    init(test_scenario::ctx(&mut scenario_val));
+
+    // second transaction executed by admin to create the sword
+    test_scenario::next_tx(&mut scenario_val, admin);
+    create_sword(20, 100, initial_owner, test_scenario::ctx(&mut scenario_val));
+
+    // third transaction executed by the initial sword owner
+    test_scenario::next_tx(&mut scenario_val, initial_owner);
+    // extract the sword owned by the initial owner
+    let sword = test_scenario::take_from_sender<Sword>(&mut scenario_val);
+    // transfer the sword to the final owner
+    sword_transfer(sword, final_owner, test_scenario::ctx(&mut scenario_val));
+
+    // fourth transaction executed by the final sword owner
+    test_scenario::next_tx(&mut scenario_val, final_owner);
+    // extract the sword owned by the final owner
+    let sword = test_scenario::take_from_sender<Sword>(&mut scenario_val);
+    assert!(magic(&sword) == 20 && strength(&sword) == 100, 1);
+    // return the sword to the object pool (it cannot be simply "dropped")
+    test_scenario::return_to_sender(&mut scenario_val, sword);
+
+    test_scenario::end(scenario_val);
   }
 }
