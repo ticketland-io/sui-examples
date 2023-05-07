@@ -67,4 +67,17 @@ module examples::Nft {
 
     transfer::transfer(nft, sender);
   }
+
+  entry public fun transfer(nft: Nft, recipient: address) {
+    transfer::transfer(nft, recipient);
+  }
+
+  public entry fun update_description(nft: &mut Nft, description: vector<u8>) {
+    nft.description = string::utf8(description)
+  }
+
+  public entry fun butn(nft: Nft) {
+    let Nft {id, name: _, description: _, uri: _} = nft;
+    object::delete(id);
+  }
 }
