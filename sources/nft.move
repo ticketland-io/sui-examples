@@ -3,7 +3,7 @@
 /// 1. SUI Collectible https://github.com/MystenLabs/sui/blob/b197bee53d73c1aff8843e759c23c166793153a3/crates/sui-framework/sources/collectible.move
 /// 2. https://capsulecraft.dev/
 /// 3. https://github.com/Origin-Byte/nft-protocol
-module examples::Nft {
+module examples::nft {
   use sui::url::{Self, Url};
   use std::string::{Self, String};
   use sui::object::{Self, ID, UID};
