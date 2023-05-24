@@ -120,7 +120,6 @@ module examples::color {
       
       assert!(red == 255 && green == 255 && blue == 255, 0);
 
-      let _ = test_scenario::ctx(&mut scenario_val);
       copy_into(&obj2, &mut obj1);
       test_scenario::return_to_sender(&mut scenario_val, obj1);
       test_scenario::return_to_sender(&mut scenario_val, obj2);
@@ -176,7 +175,6 @@ module examples::color {
     let recipient = @0x2;
     test_scenario::next_tx(&mut scenario_val, owner);
     let object = test_scenario::take_from_sender<ColorObject>(&mut scenario_val);
-    let _ = test_scenario::ctx(&mut scenario_val);
     transfer(object, recipient);
 
     // Check that owner no longer owns the object.

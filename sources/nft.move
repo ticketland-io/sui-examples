@@ -76,7 +76,7 @@ module examples::nft {
     nft.description = string::utf8(description)
   }
 
-  public entry fun butn(nft: Nft) {
+  public entry fun burn(nft: Nft) {
     let Nft {id, name: _, description: _, uri: _} = nft;
     object::delete(id);
   }
