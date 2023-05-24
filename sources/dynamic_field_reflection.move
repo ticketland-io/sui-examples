@@ -59,7 +59,7 @@ module examples::dynamic_field_reflection {
     extract_dynamic_child_1(c1);
 
     // Alternative solution. A much better aproach!!!!!!!!!!!!
-    if(dfield::exists_with_type<vecor<u8>, DynamicChild_1>(&parent_1.id, b"child")) {
+    if(dfield::exists_with_type<vector<u8>, DynamicChild_1>(&parent_1.id, b"child")) {
       // this is a DynamicChild_1
     } else if(dfield::exists_with_type<vector<u8>, DynamicChild_2>(&parent_1.id, b"child")) {
       // this is a DynamicChild_1
